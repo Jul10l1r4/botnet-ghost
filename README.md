@@ -1,4 +1,5 @@
-![Logo botnet-ghost](img/logo.svg)
+<img src="img/logo.svg" alt="Logo botnet-ghost">
+
 # Run
 > This project are development
 ```bash
