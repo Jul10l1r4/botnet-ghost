@@ -1,4 +1,6 @@
-<img src="img/logo.svg" alt="Logo botnet-ghost">
+<center>
+<img src="img/logo.svg" alt="Logo botnet-ghost" width="100px">
+</center>
 
 # Run
 > This project are development
