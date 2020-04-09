@@ -1,10 +1,10 @@
-<center>
-<img src="img/logo.svg" alt="Logo botnet-ghost" width="100px">
-</center>
+<p align="center">
+  <img src="img/logo.svg" alt="Logo botnet-ghost" width="200px">
+</p>
 
 # Run
 > This project are development
-```bash
+```go
 go build main.go
 ./main.go <file template .html>
 ```
@@ -12,6 +12,8 @@ go build main.go
 ## C2 server
 Server in GO with Sqlite and api, see endpoints:
 * /some-string-random?gclid=base-64
+
 For client sent in base64: `id\response`
 * /auth
+
 API for some frontend use
