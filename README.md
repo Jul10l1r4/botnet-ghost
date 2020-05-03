@@ -13,7 +13,7 @@ go build main.go
 Server in GO with Sqlite and api, see endpoints:
 * /some-string-random?gclid=base-64
 
-For client sent in base64: `id\response` [[See T1132 technique](https://attack.mitre.org/techniques/T1132/)]
+For client sent in base64: `id-database==response==status exited` [[See T1132 technique](https://attack.mitre.org/techniques/T1132/)]
 * /auth
 
 API for some frontend use
