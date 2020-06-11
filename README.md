@@ -30,6 +30,6 @@ Encrypted: base64 [[See T1132 technique](https://attack.mitre.org/techniques/T11
 
 Protocol: HTTP(s) [[See T1071 technique](https://attack.mitre.org/techniques/T1071/)]
 
-* /auth (for attacker)
+* /victim (for attacker)
 
 API for some frontend use
