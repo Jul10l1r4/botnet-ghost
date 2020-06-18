@@ -13,9 +13,9 @@ go build main.go
 Server in GO with Sqlite and api, see endpoints:
 * /some-string-random?gclid=base-64
 
-* * For new client: `details of machine==ip address` (Response: `Command for run==id of db`)
+* * For new client: `details of machine==ip address` (Response: `Command for run==id of db;id-of-command`)
 
-* * For synchronize exists client: `id-database==response==status exited` (Response: `command for run==time for new request`)
+* * For synchronize exists client: `id-of-command;id-database==response==status exited` (Response: `command for run==time for new request;id-of-command`)
 
 ## Response
 The response command of server running within HTML in specific tag with template.
