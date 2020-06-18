@@ -26,7 +26,7 @@ Ex:
 ...
 ```
 
-Encrypted: base64 [[See T1132 technique](https://attack.mitre.org/techniques/T1132/)]
+Encrypted: base64 [[See T1132 technique](https://attack.mitre.org/techniques/T1132/)] [T1132.002](https://attack.mitre.org/beta/techniques/T1132/002/)
 
 Protocol: HTTP(s) [[See T1071 technique](https://attack.mitre.org/techniques/T1071/)]
 
